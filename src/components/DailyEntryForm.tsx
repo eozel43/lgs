@@ -5,10 +5,12 @@ import { Subject, DailyEntry, SubjectEntry } from '../types';
 interface Props {
   subjects: Subject[];
   onAddEntry: (entry: DailyEntry) => void;
+  loading?: boolean;
 }
 
-const DailyEntryForm: React.FC<Props> = ({ subjects, onAddEntry }) => {
+const DailyEntryForm: React.FC<Props> = ({ subjects, onAddEntry, loading = false }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [submitting, setSubmitting] = useState(false);
   const [subjectEntries, setSubjectEntries] = useState<Record<string, SubjectEntry>>(
     subjects.reduce((acc, subject) => ({
       ...acc,
@@ -31,11 +33,11 @@ const DailyEntryForm: React.FC<Props> = ({ subjects, onAddEntry }) => {
     return entry.correct + entry.wrong + entry.blank;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     
-    const entry: DailyEntry = {
-      id: Date.now().toString(),
+    const entry: Omit<DailyEntry, 'id'> = {
       date,
       subjects: { ...subjectEntries }
     };
@@ -45,15 +47,21 @@ const DailyEntryForm: React.FC<Props> = ({ subjects, onAddEntry }) => {
       entry.subjects[subjectId].total = calculateTotal(subjectId);
     });
 
-    onAddEntry(entry);
-    
-    // Reset form
-    setSubjectEntries(subjects.reduce((acc, subject) => ({
-      ...acc,
-      [subject.id]: { total: 0, correct: 0, wrong: 0, blank: 0 }
-    }), {}));
-    
-    setDate(new Date().toISOString().split('T')[0]);
+    try {
+      await onAddEntry(entry);
+      
+      // Reset form on success
+      setSubjectEntries(subjects.reduce((acc, subject) => ({
+        ...acc,
+        [subject.id]: { total: 0, correct: 0, wrong: 0, blank: 0 }
+      }), {}));
+      
+      setDate(new Date().toISOString().split('T')[0]);
+    } catch (error) {
+      console.error('Error adding entry:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -154,10 +162,11 @@ const DailyEntryForm: React.FC<Props> = ({ subjects, onAddEntry }) => {
           <div className="mt-8 flex justify-end">
             <button
               type="submit"
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-colors shadow-lg"
+              disabled={submitting || loading}
+              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="h-5 w-5" />
-              <span>Kaydet</span>
+              <span>{submitting ? 'Kaydediliyor...' : 'Kaydet'}</span>
             </button>
           </div>
         </form>

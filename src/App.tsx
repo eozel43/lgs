@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, BarChart3, TrendingUp, Calendar, Award, Target } from 'lucide-react';
+import { BookOpen, BarChart3, TrendingUp, Calendar, Award, Target, LogOut } from 'lucide-react';
+import { useAuth } from './hooks/useAuth';
+import { useEntries } from './hooks/useEntries';
+import AuthForm from './components/AuthForm';
 import DailyEntryForm from './components/DailyEntryForm';
 import SubjectStats from './components/SubjectStats';
 import ReportsSection from './components/ReportsSection';
-import { Subject, DailyEntry, SubjectData } from './types';
+import { Subject, SubjectData } from './types';
 
 const SUBJECTS: Subject[] = [
   { id: 'turkce', name: 'Türkçe', color: '#EF4444' },
@@ -15,17 +18,30 @@ const SUBJECTS: Subject[] = [
 ];
 
 function App() {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { entries, loading: entriesLoading, addEntry } = useEntries(user?.id);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports'>('dashboard');
-  const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [subjectStats, setSubjectStats] = useState<Record<string, SubjectData>>({});
 
-  // Load data from localStorage on component mount
-  useEffect(() => {
-    const savedEntries = localStorage.getItem('lgs-entries');
-    if (savedEntries) {
-      setEntries(JSON.parse(savedEntries));
-    }
-  }, []);
+  // Show loading screen while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl mb-4">
+            <BookOpen className="h-12 w-12 text-white mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">LGS Takip Sistemi</h2>
+          <p className="text-gray-600">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth form if not logged in
+  if (!user) {
+    return <AuthForm />;
+  }
 
   // Calculate subject statistics whenever entries change
   useEffect(() => {
@@ -69,10 +85,8 @@ function App() {
     setSubjectStats(stats);
   }, [entries]);
 
-  const addEntry = (entry: DailyEntry) => {
-    const newEntries = [...entries, entry];
-    setEntries(newEntries);
-    localStorage.setItem('lgs-entries', JSON.stringify(newEntries));
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   const getTotalStats = () => {
@@ -115,16 +129,29 @@ function App() {
                 <p className="text-sm text-gray-600">Lise Giriş Sınavı Hazırlık Platformu</p>
               </div>
             </div>
-            <div className="hidden md:flex items-center space-x-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{totalStats.totalQuestions}</div>
-                <div className="text-xs text-gray-500">Toplam Soru</div>
+            <div className="flex items-center space-x-6">
+              <div className="hidden md:flex items-center space-x-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{totalStats.totalQuestions}</div>
+                  <div className="text-xs text-gray-500">Toplam Soru</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{totalStats.accuracyRate.toFixed(1)}%</div>
+                  <div className="text-xs text-gray-500">Başarı Oranı</div>
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{totalStats.accuracyRate.toFixed(1)}%</div>
-                <div className="text-xs text-gray-500">Başarı Oranı</div>
+                <p className="text-sm text-gray-600 mb-1">Hoş geldin,</p>
+                <p className="font-medium text-gray-900">{user.user_metadata?.full_name || user.email}</p>
               </div>
-            </div>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+                title="Çıkış Yap"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+              </div>
           </div>
         </div>
       </header>
@@ -231,7 +258,11 @@ function App() {
         )}
 
         {activeTab === 'entry' && (
-          <DailyEntryForm subjects={SUBJECTS} onAddEntry={addEntry} />
+          <DailyEntryForm 
+            subjects={SUBJECTS} 
+            onAddEntry={addEntry}
+            loading={entriesLoading}
+          />
         )}
 
         {activeTab === 'reports' && (
