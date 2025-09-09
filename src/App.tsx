@@ -2,82 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, BarChart3, TrendingUp, Calendar, Award, Target, LogOut } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import { useEntries } from './hooks/useEntries';
+import useSubjects from './hooks/useSubjects';
 import { isSupabaseConfigured } from './lib/supabase';
 import AuthForm from './components/AuthForm';
 import DailyEntryForm from './components/DailyEntryForm';
 import SubjectStats from './components/SubjectStats';
 import ReportsSection from './components/ReportsSection';
-import { Subject, SubjectData } from './types';
+import { Subject, SubjectData, DailyEntry } from './types';
+import type { User } from '@supabase/supabase-js';
 
-const SUBJECTS: Subject[] = [
-  { id: 'turkce', name: 'Türkçe', color: '#EF4444' },
-  { id: 'matematik', name: 'Matematik', color: '#3B82F6' },
-  { id: 'fen', name: 'Fen Bilgisi', color: '#10B981' },
-  { id: 'sosyal', name: 'Sosyal Bilgiler', color: '#F59E0B' },
-  { id: 'din', name: 'Din Kültürü ve Ahlak Bilgisi', color: '#8B5CF6' },
-  { id: 'ingilizce', name: 'İngilizce', color: '#EC4899' }
-];
-
-function App() {
-  const { user, loading: authLoading, signOut } = useAuth();
-  const { entries, loading: entriesLoading, addEntry } = useEntries(user?.id);
+function MainAppContent({
+  user,
+  subjects,
+  entries,
+  entriesLoading,
+  addEntry,
+  signOut,
+}: {
+  user: User;
+  subjects: Subject[];
+  entries: DailyEntry[];
+  entriesLoading: boolean;
+  addEntry: (entry: Omit<DailyEntry, 'id'>) => Promise<{ error: string | null } | void>;
+  signOut: () => Promise<void>;
+}) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports'>('dashboard');
   const [subjectStats, setSubjectStats] = useState<Record<string, SubjectData>>({});
 
-  // Show Supabase connection warning if not configured
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl mb-6">
-            <BookOpen className="h-12 w-12 text-white mx-auto" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Supabase Bağlantısı Gerekli</h2>
-          <p className="text-gray-600 mb-6">
-            LGS Takip Sistemi'ni kullanmak için mevcut "lgs" Supabase projenize bağlanmanız gerekiyor.
-          </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800">
-              1. Sağ üstteki <strong>"Connect to Supabase"</strong> butonuna tıklayın<br/>
-              2. Mevcut <strong>"lgs"</strong> projenizi seçin<br/>
-              3. Bağlantı kurulduktan sonra sayfa yenilenecektir
-            </p>
-          </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-sm text-green-800">
-              <strong>Not:</strong> Mevcut "lgs" projenizde gerekli tablolar otomatik olarak oluşturulacaktır.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading screen while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl mb-4">
-            <BookOpen className="h-12 w-12 text-white mx-auto" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">LGS Takip Sistemi</h2>
-          <p className="text-gray-600">Yükleniyor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show auth form if not logged in
-  if (!user) {
-    return <AuthForm />;
-  }
-
-  // Calculate subject statistics whenever entries change
+  // Calculate subject statistics whenever entries/subjects change
   useEffect(() => {
     const stats: Record<string, SubjectData> = {};
     
-    SUBJECTS.forEach(subject => {
+    subjects.forEach(subject => {
       stats[subject.id] = {
         totalQuestions: 0,
         correct: 0,
@@ -113,7 +69,7 @@ function App() {
     });
 
     setSubjectStats(stats);
-  }, [entries]);
+  }, [entries, subjects]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -269,7 +225,7 @@ function App() {
 
             {/* Subject Statistics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {SUBJECTS.map(subject => (
+              {subjects.map(subject => (
                 <SubjectStats
                   key={subject.id}
                   subject={subject}
@@ -289,17 +245,97 @@ function App() {
 
         {activeTab === 'entry' && (
           <DailyEntryForm 
-            subjects={SUBJECTS} 
+            subjects={subjects} 
             onAddEntry={addEntry}
             loading={entriesLoading}
           />
         )}
 
         {activeTab === 'reports' && (
-          <ReportsSection subjects={SUBJECTS} entries={entries} subjectStats={subjectStats} />
+          <ReportsSection subjects={subjects} entries={entries} subjectStats={subjectStats} />
         )}
       </main>
     </div>
+  );
+}
+
+function App() {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { entries, loading: entriesLoading, addEntry } = useEntries(user?.id);
+  const { subjects, loading: subjectsLoading } = useSubjects();
+
+  // Show Supabase connection warning if not configured
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl mb-6">
+            <BookOpen className="h-12 w-12 text-white mx-auto" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Supabase Bağlantısı Gerekli</h2>
+          <p className="text-gray-600 mb-6">
+            LGS Takip Sistemi'ni kullanmak için mevcut "lgs" Supabase projenize bağlanmanız gerekiyor.
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-800">
+              1. Sağ üstteki <strong>"Connect to Supabase"</strong> butonuna tıklayın<br/>
+              2. Mevcut <strong>"lgs"</strong> projenizi seçin<br/>
+              3. Bağlantı kurulduktan sonra sayfa yenilenecektir
+            </p>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800">
+              <strong>Not:</strong> Mevcut "lgs" projenizde gerekli tablolar otomatik olarak oluşturulacaktır.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading screen while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl mb-4">
+            <BookOpen className="h-12 w-12 text-white mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">LGS Takip Sistemi</h2>
+          <p className="text-gray-600">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while fetching subjects
+  if (subjectsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl mb-4">
+            <BookOpen className="h-12 w-12 text-white mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Dersler yükleniyor...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth form if not logged in
+  if (!user) {
+    return <AuthForm />;
+  }
+
+  return (
+    <MainAppContent
+      user={user}
+      subjects={subjects}
+      entries={entries}
+      entriesLoading={entriesLoading}
+      addEntry={addEntry}
+      signOut={signOut}
+    />
   );
 }
 
