@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { BarChart3, Calendar, Filter, Download, TrendingUp } from 'lucide-react';
+import { BarChart3, Calendar, Download, TrendingUp } from 'lucide-react';
 import { Subject, DailyEntry, SubjectData } from '../types';
 
 interface Props {
@@ -122,7 +122,7 @@ const ReportsSection: React.FC<Props> = ({ subjects, entries, subjectStats }) =>
             <label className="block text-sm font-medium text-gray-700 mb-1">Dönem</label>
             <select
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value as any)}
+              onChange={(e) => setSelectedPeriod(e.target.value as '7' | '30' | '90' | 'all')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="7">Son 7 Gün</option>

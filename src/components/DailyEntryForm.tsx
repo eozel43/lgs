@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Save, Calendar } from 'lucide-react';
+import { Save, Calendar } from 'lucide-react';
 import { Subject, DailyEntry, SubjectEntry } from '../types';
 
 interface Props {
