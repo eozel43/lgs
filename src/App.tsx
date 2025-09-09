@@ -8,6 +8,9 @@ import SubjectStats from './components/SubjectStats';
 import ReportsSection from './components/ReportsSection';
 import { Subject, SubjectData } from './types';
 
+// Check if Supabase is configured
+const isSupabaseConfigured = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+
 const SUBJECTS: Subject[] = [
   { id: 'turkce', name: 'Türkçe', color: '#EF4444' },
   { id: 'matematik', name: 'Matematik', color: '#3B82F6' },
@@ -22,6 +25,31 @@ function App() {
   const { entries, loading: entriesLoading, addEntry } = useEntries(user?.id);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports'>('dashboard');
   const [subjectStats, setSubjectStats] = useState<Record<string, SubjectData>>({});
+
+  // Show Supabase connection warning if not configured
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl mb-6">
+            <BookOpen className="h-12 w-12 text-white mx-auto" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Supabase Bağlantısı Gerekli</h2>
+          <p className="text-gray-600 mb-6">
+            LGS Takip Sistemi'ni kullanmak için Supabase veritabanına bağlanmanız gerekiyor.
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-800">
+              Sağ üstteki <strong>"Connect to Supabase"</strong> butonuna tıklayarak bağlantıyı kurun.
+            </p>
+          </div>
+          <p className="text-sm text-gray-500">
+            Bağlantı kurulduktan sonra sayfa otomatik olarak yenilenecektir.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading screen while checking auth
   if (authLoading) {
