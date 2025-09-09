@@ -48,7 +48,6 @@ function App() {
               <strong>Not:</strong> Mevcut "lgs" projenizde gerekli tablolar otomatik olarak oluşturulacaktır.
             </p>
           </div>
-          </p>
         </div>
       </div>
     );
