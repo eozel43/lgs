@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, BarChart3, TrendingUp, Calendar, Award, Target, LogOut } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import { useEntries } from './hooks/useEntries';
+import { isSupabaseConfigured } from './lib/supabase';
 import AuthForm from './components/AuthForm';
 import DailyEntryForm from './components/DailyEntryForm';
 import SubjectStats from './components/SubjectStats';
 import ReportsSection from './components/ReportsSection';
 import { Subject, SubjectData } from './types';
-
-// Check if Supabase is configured
-const isSupabaseConfigured = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 const SUBJECTS: Subject[] = [
   { id: 'turkce', name: 'Türkçe', color: '#EF4444' },
@@ -36,15 +34,20 @@ function App() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Supabase Bağlantısı Gerekli</h2>
           <p className="text-gray-600 mb-6">
-            LGS Takip Sistemi'ni kullanmak için Supabase veritabanına bağlanmanız gerekiyor.
+            LGS Takip Sistemi'ni kullanmak için mevcut "lgs" Supabase projenize bağlanmanız gerekiyor.
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-800">
-              Sağ üstteki <strong>"Connect to Supabase"</strong> butonuna tıklayarak bağlantıyı kurun.
+              1. Sağ üstteki <strong>"Connect to Supabase"</strong> butonuna tıklayın<br/>
+              2. Mevcut <strong>"lgs"</strong> projenizi seçin<br/>
+              3. Bağlantı kurulduktan sonra sayfa yenilenecektir
             </p>
           </div>
-          <p className="text-sm text-gray-500">
-            Bağlantı kurulduktan sonra sayfa otomatik olarak yenilenecektir.
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800">
+              <strong>Not:</strong> Mevcut "lgs" projenizde gerekli tablolar otomatik olarak oluşturulacaktır.
+            </p>
+          </div>
           </p>
         </div>
       </div>
