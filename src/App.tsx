@@ -22,7 +22,6 @@ const SUBJECTS: Subject[] = [
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { entries, loading: entriesLoading, addEntry, updateEntry, deleteEntry } = useEntries(user?.id);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports'>('dashboard');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports' | 'history'>('dashboard');
   const [subjectStats, setSubjectStats] = useState<Record<string, SubjectData>>({});
 
