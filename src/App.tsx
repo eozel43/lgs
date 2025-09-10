@@ -7,6 +7,7 @@ import AuthForm from './components/AuthForm';
 import DailyEntryForm from './components/DailyEntryForm';
 import SubjectStats from './components/SubjectStats';
 import ReportsSection from './components/ReportsSection';
+import EntryList from './components/EntryList';
 import { Subject, SubjectData } from './types';
 
 const SUBJECTS: Subject[] = [
@@ -20,8 +21,9 @@ const SUBJECTS: Subject[] = [
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { entries, loading: entriesLoading, addEntry } = useEntries(user?.id);
+  const { entries, loading: entriesLoading, addEntry, updateEntry, deleteEntry } = useEntries(user?.id);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports' | 'history'>('dashboard');
   const [subjectStats, setSubjectStats] = useState<Record<string, SubjectData>>({});
 
   // Calculate subject statistics whenever entries change
@@ -193,7 +195,8 @@ function App() {
             {[
               { id: 'dashboard', label: 'Genel Görünüm', icon: TrendingUp },
               { id: 'entry', label: 'Günlük Giriş', icon: Calendar },
-              { id: 'reports', label: 'Raporlar', icon: BarChart3 }
+              { id: 'reports', label: 'Raporlar', icon: BarChart3 },
+              { id: 'history', label: 'Geçmiş Girişler', icon: Calendar }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -297,6 +300,16 @@ function App() {
 
         {activeTab === 'reports' && (
           <ReportsSection subjects={SUBJECTS} entries={entries} subjectStats={subjectStats} />
+        )}
+
+        {activeTab === 'history' && (
+          <EntryList 
+            entries={entries}
+            subjects={SUBJECTS}
+            onUpdateEntry={updateEntry}
+            onDeleteEntry={deleteEntry}
+            loading={entriesLoading}
+          />
         )}
       </main>
     </div>
