@@ -24,6 +24,48 @@ function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'entry' | 'reports'>('dashboard');
   const [subjectStats, setSubjectStats] = useState<Record<string, SubjectData>>({});
 
+  // Calculate subject statistics whenever entries change
+  useEffect(() => {
+    const stats: Record<string, SubjectData> = {};
+    
+    SUBJECTS.forEach(subject => {
+      stats[subject.id] = {
+        totalQuestions: 0,
+        correct: 0,
+        wrong: 0,
+        blank: 0,
+        accuracyRate: 0,
+        dailyEntries: []
+      };
+    });
+
+    entries.forEach(entry => {
+      Object.keys(entry.subjects).forEach(subjectId => {
+        const subjectEntry = entry.subjects[subjectId];
+        if (stats[subjectId]) {
+          stats[subjectId].totalQuestions += subjectEntry.total;
+          stats[subjectId].correct += subjectEntry.correct;
+          stats[subjectId].wrong += subjectEntry.wrong;
+          stats[subjectId].blank += subjectEntry.blank;
+          stats[subjectId].dailyEntries.push({
+            date: entry.date,
+            ...subjectEntry
+          });
+        }
+      });
+    });
+
+    // Calculate accuracy rates
+    Object.keys(stats).forEach(subjectId => {
+      const stat = stats[subjectId];
+      if (stat.totalQuestions > 0) {
+        stat.accuracyRate = (stat.correct / stat.totalQuestions) * 100;
+      }
+    });
+
+    setSubjectStats(stats);
+  }, [entries]);
+
   // Show Supabase connection warning if not configured
   if (!isSupabaseConfigured) {
     return (
@@ -72,48 +114,6 @@ function App() {
   if (!user) {
     return <AuthForm />;
   }
-
-  // Calculate subject statistics whenever entries change
-  useEffect(() => {
-    const stats: Record<string, SubjectData> = {};
-    
-    SUBJECTS.forEach(subject => {
-      stats[subject.id] = {
-        totalQuestions: 0,
-        correct: 0,
-        wrong: 0,
-        blank: 0,
-        accuracyRate: 0,
-        dailyEntries: []
-      };
-    });
-
-    entries.forEach(entry => {
-      Object.keys(entry.subjects).forEach(subjectId => {
-        const subjectEntry = entry.subjects[subjectId];
-        if (stats[subjectId]) {
-          stats[subjectId].totalQuestions += subjectEntry.total;
-          stats[subjectId].correct += subjectEntry.correct;
-          stats[subjectId].wrong += subjectEntry.wrong;
-          stats[subjectId].blank += subjectEntry.blank;
-          stats[subjectId].dailyEntries.push({
-            date: entry.date,
-            ...subjectEntry
-          });
-        }
-      });
-    });
-
-    // Calculate accuracy rates
-    Object.keys(stats).forEach(subjectId => {
-      const stat = stats[subjectId];
-      if (stat.totalQuestions > 0) {
-        stat.accuracyRate = (stat.correct / stat.totalQuestions) * 100;
-      }
-    });
-
-    setSubjectStats(stats);
-  }, [entries]);
 
   const handleSignOut = async () => {
     await signOut();
